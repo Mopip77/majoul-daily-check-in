@@ -1,7 +1,6 @@
 import os
 import time
 import logging
-import yaml
 
 from typing import List
 from uuid import uuid1
@@ -11,6 +10,9 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.chrome.options import Options
 
+from config import loadConfig
+from mail import sendMail
+
 MAJSOUL_URL = "https://game.maj-soul.com/1/"
 WIDTH = 1200
 HEIGHT = 800
@@ -19,7 +21,7 @@ logging.getLogger('majsoul')
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(filename)s[:%(lineno)d] - %(message)s"')
 
-CONFIG = yaml.load('config.yaml')
+CONFIG = loadConfig(logging)
 
 OCR = PaddleOCR(use_angle_cls=True, lang='ch')
 
@@ -132,7 +134,8 @@ def driverExecute(driver: WebDriver, actions: List[Action]):
         action.act(driver)
 
 options = Options()
-# options.add_argument(f"--force-device-scale-factor=2.0")
+if CONFIG['headless']:
+    options.add_argument('--headless')
 driver = webdriver.Chrome(options=options)
 driver.set_window_size(WIDTH, HEIGHT)
 
@@ -183,14 +186,20 @@ try:
     acquirePos = screenShotThenOcrMatch(driver=driver, pattern='领取辉玉', precise=True,
                             retryTimes=10, retryPeriod=2, step='等待月卡框加载')
 
-    # driverExecute(driver, [
-    #     Action(Action.MOVE, 0, acquirePos.x, acquirePos.y),
-    #     Action(Action.CLICK, 2),
-    #     Action(Action.MOVE, 0, -acquirePos.x, -acquirePos.y),
-    # ])
-finally:
+    driverExecute(driver, [
+        Action(Action.MOVE, 0, acquirePos.x, acquirePos.y),
+        Action(Action.CLICK, 2),
+        Action(Action.MOVE, 0, -acquirePos.x, -acquirePos.y),
+    ])
+except Exception as e:
     try:
         driver.get_screenshot_as_file('final.png')
+        if CONFIG['mail']:
+            mailConfig = CONFIG['mail']
+            sendMail(mailConfig['smtp-server'], mailConfig['smtp-port'], mailConfig['email'], mailConfig['password'], [mailConfig['receiver']], '签到失败', str(e), 'final.png')
     except Exception as e:
-        logging.error("最终获取截图失败")
+        logging.error("截图发送邮件失败")
+finally:
+    if os.path.exists('final.png'):
+        os.remove('final.png')
     driver.close()

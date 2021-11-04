@@ -1,7 +1,10 @@
+# 雀魂账号配置
 username: <your-username>
 password: <your-password>
+# 是否无头启动selenium
+headless: true
 
-# 如果不需要提醒可删除配置
+# 如果不需要提醒可删除邮件相关配置
 mail:
   smtp-server: 
   smtp-port:
