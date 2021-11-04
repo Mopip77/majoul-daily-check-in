@@ -1,0 +1,10 @@
+username: <your-username>
+password: <your-password>
+
+# 如果不需要提醒可删除配置
+mail:
+  smtp-server: 
+  smtp-port:
+  email:
+  password:
+  receiver:
