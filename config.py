@@ -1,4 +1,3 @@
-from paddleocr.paddleocr import main
 import yaml
 import os
 import logging

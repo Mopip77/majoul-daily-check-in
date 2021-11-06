@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import yaml
 
 from typing import List
 from uuid import uuid1
@@ -22,8 +23,20 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(filename)s[:%(lineno)d] - %(message)s"')
 
 CONFIG = loadConfig(logging)
+lang = CONFIG['lang']
+I18N = yaml.full_load(open('i18n.yaml', 'r').read())
 
-OCR = PaddleOCR(use_angle_cls=True, lang='ch')
+args = {'use_angle_cls': True}
+if CONFIG['headless']:
+    args['use_gpu'] = False
+    args['enable_mkldnn'] = True
+
+if lang == 'cht':
+    args['rec_model_dir'] = 'i18n_infer/cht_infer'
+else:
+    args['lang'] = 'ch'
+
+OCR = PaddleOCR(**args)
 
 class POS():
     def __init__(self, left, right, top, bottom):
@@ -50,10 +63,13 @@ class Action():
 
     def act(self, driver):
         if self.actionType == Action.CLICK:
+            logging.info("[ACTION] click")
             ActionChains(driver).click().perform()
         elif self.actionType == Action.SEND_KEY:
+            logging.info(f"[ACTION] send keys, {self.args}")
             ActionChains(driver).send_keys(*self.args).perform()
         elif self.actionType == Action.MOVE:
+            logging.info(f"[ACTION] move to {self.args}")
             ActionChains(driver).move_by_offset(*self.args).perform()
 
         if self.delay > 0:
@@ -118,11 +134,11 @@ def screenShotThenOcrMatch(driver: WebDriver, pattern: str, precise: bool, retry
             driver.get_screenshot_as_file(filename)
             res = getTextPosByOcr(filename, pattern, precise)
             if res:
-                logging.info(f'成功获取[{pattern}]文本位置, {res}')
+                logging.info(f'成功获取[{pattern}]文本位置, {res}\n')
                 return res
             else:
                 if i != retryTimes:
-                    logging.info(f'获取失败, 等待{retryPeriod}s进行下一次识别')
+                    logging.info(f'获取失败, 等待{retryPeriod}s进行下一次识别\n')
                     time.sleep(retryPeriod)
     finally:
         os.remove(filename)
@@ -142,11 +158,11 @@ driver.set_window_size(WIDTH, HEIGHT)
 try:
     # 登录, 并等待加载
     driver.get(MAJSOUL_URL)
-    userNamePos = screenShotThenOcrMatch(driver=driver, pattern='账号/邮箱', precise=True,
-                           retryTimes=20, retryPeriod=5, step='登录账号')
-    userPassPos = screenShotThenOcrMatch(driver=driver, pattern='密码', precise=True,
-                           retryTimes=4, retryPeriod=2, step='登录账号')
-    loginPos = screenShotThenOcrMatch(driver=driver, pattern='进入游戏', precise=True,
+    userNamePos = screenShotThenOcrMatch(driver=driver, pattern=I18N[lang]['username'], precise=False,
+                           retryTimes=20, retryPeriod=5, step='输入用户名')
+    userPassPos = screenShotThenOcrMatch(driver=driver, pattern=I18N[lang]['password'], precise=True,
+                           retryTimes=4, retryPeriod=2, step='输入密码')
+    loginPos = screenShotThenOcrMatch(driver=driver, pattern=I18N[lang]['login'], precise=False,
                            retryTimes=4, retryPeriod=2, step='登录账号')
 
     # 用户名
@@ -172,8 +188,8 @@ try:
 
     time.sleep(10)
 
-    yuekaPos = screenShotThenOcrMatch(driver=driver, pattern='月势御守', precise=True,
-                            retryTimes=10, retryPeriod=5, step='等待月卡框加载')
+    yuekaPos = screenShotThenOcrMatch(driver=driver, pattern=I18N[lang]['yueka'], precise=False,
+                            retryTimes=10, retryPeriod=5, step='等待月卡页面加载')
 
     driverExecute(driver, [
         Action(Action.MOVE, 0, yuekaPos.x, yuekaPos.y),
@@ -183,8 +199,8 @@ try:
 
     time.sleep(2)
 
-    acquirePos = screenShotThenOcrMatch(driver=driver, pattern='领取辉玉', precise=True,
-                            retryTimes=10, retryPeriod=2, step='等待月卡框加载')
+    acquirePos = screenShotThenOcrMatch(driver=driver, pattern=I18N[lang]['checkIn'], precise=False,
+                            retryTimes=10, retryPeriod=2, step='领取辉玉')
 
     driverExecute(driver, [
         Action(Action.MOVE, 0, acquirePos.x, acquirePos.y),

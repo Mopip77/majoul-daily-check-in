@@ -1,0 +1,13 @@
+chs:
+  username: 账号/邮箱
+  password: 密码
+  login: 进入游戏
+  yueka: 月势御守
+  checkIn: 领取辉玉
+cht:
+  # 繁体中文部分文字识别不准确, 使用宽松匹配
+  username: /電郵
+  password: 密碼
+  login: 進入
+  yueka: 御守
+  checkIn: 取辉玉

@@ -158,3 +158,5 @@ pip-selfcheck.json
 
 config.local.yaml
 .DS_Store
+i18n_infer/**/model
+i18n_infer/**/params

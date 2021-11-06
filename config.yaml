@@ -3,6 +3,8 @@ username: <your-username>
 password: <your-password>
 # 是否无头启动selenium
 headless: true
+# 简体chs 繁体cht
+lang: chs
 
 # 如果不需要提醒可删除邮件相关配置
 mail:
